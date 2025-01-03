@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Stash Revert Groups to Movies
 // @author       Splash4K
-// @version      0.1
+// @version      0.1.1
 // @description  Revert "Groups" with "Movies" in Stash
 // @match        http://localhost:9999/*
 // ==/UserScript==
@@ -20,37 +20,27 @@
 
     function replaceTextContent(node) {
         let text = node.textContent.trim();
-
-        if (text) {
-            for (const [search, replace] of Object.entries(replacements)) {
-                const regex = new RegExp(`\\b${search}\\b`, 'gi'); // Match whole words, case-insensitively
-                text = text.replace(regex, (match) =>
-                    match[0] === match[0].toUpperCase() ? replace.charAt(0).toUpperCase() + replace.slice(1) : replace
-                );
-            }
-            node.textContent = text;
+        for (const [search, replace] of Object.entries(replacements)) {
+            const regex = new RegExp(`\\b${search}\\b`, 'gi');
+            text = text.replace(regex, (match) =>
+                match[0] === match[0].toUpperCase() ? replace.charAt(0).toUpperCase() + replace.slice(1) : replace
+            );
         }
+        node.textContent = text;
     }
 
     function processElements() {
-        const elements = document.querySelectorAll('*:not(script):not(style):not([data-ignore-replace])');
-        elements.forEach((el) => {
-            el.childNodes.forEach((child) => {
-                if (child.nodeType === Node.TEXT_NODE) {
-                    replaceTextContent(child);
-                }
-            });
+        document.querySelectorAll('*:not(script):not(style):not([data-ignore-replace]):not(.alias-head):not(.card-section-title):not(.tag-name):not(.tooltip-inner):not(.TruncatedText)').forEach((el) => {
+            if (!el.closest('.alias-head, .card-section-title, .tag-name, .tooltip-inner, .TruncatedText') && el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) {
+                replaceTextContent(el);
+            }
         });
     }
 
     function init() {
         processElements();
-
-        const observer = new MutationObserver(() => processElements());
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        const observer = new MutationObserver(processElements);
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     if (document.readyState === 'loading') {
